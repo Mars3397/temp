@@ -20,32 +20,32 @@ uint16_t cal_tcp_cksm(struct iphdr iphdr, struct tcphdr tcphdr, uint8_t *pl, int
     sum += iphdr.saddr & 0xFFFF;         // Add the source IP address (lower 16 bits)
     sum += (iphdr.daddr >> 16) & 0xFFFF; // Add the destination IP address (upper 16 bits)
     sum += iphdr.daddr & 0xFFFF;         // Add the destination IP address (lower 16 bits)
-    sum += htons(IPPROTO_TCP);           // Add the protocol number (TCP)
-    sum += htons(tcphdr.th_off * 4 + plen); // Add the length of the TCP header and payload
+    sum += IPPROTO_TCP;                  // Add the protocol number (TCP)
+    sum += tcphdr.th_off * 4 + plen;     // Add the length of the TCP header and payload
 
     // Calculate the TCP header and payload checksum
-    int tcplen = tcphdr.th_off * 4; // Calculate the length of the TCP header
-    uint16_t *buf = new uint16_t[(tcplen + plen) / 2]; // Create a buffer to store the TCP header and payload
-    memcpy(buf, &tcphdr, tcplen); // Copy the TCP header to the buffer
-    memcpy(buf + tcplen/2, pl, plen); // Copy the payload to the buffer, starting at the midpoint of the buffer
+    int tcphdr_len = tcphdr.th_off * 4; // Calculate the length of the TCP header
+    uint16_t *buf = (uint16_t *)malloc((tcphdr_len + plen) / 2 * sizeof(uint16_t)); // Create a buffer to store the TCP header and payload
+    memcpy(buf, &tcphdr, tcphdr_len); // Copy the TCP header to the buffer
+    memcpy(buf + tcphdr_len / 2, pl, plen); // Copy the payload to the buffer, starting at the midpoint of the buffer
 
-    for (int i = 0; i < (tcplen + plen) / 2; i++) { // Loop over the buffer, 16 bits at a time
-        sum += ntohs(buf[i]); // Add each 16-bit value to the checksum, after converting to host byte order
+    for (int i = 0; i < (tcphdr_len + plen) / 2; i++) { // Loop over the buffer, 16 bits at a time
+        sum += buf[i]; // Add each 16-bit value to the checksum, after converting to host byte order
     }
-    if ((tcplen + plen) % 2 == 1) { // If the length of the TCP header and payload is odd
-        uint16_t last = ((uint8_t *)buf)[tcplen + plen - 1]; // Get the last byte of the buffer
+    if ((tcphdr_len + plen) % 2 == 1) { // If the length of the TCP header and payload is odd
+        uint16_t last = ((uint8_t *)buf)[tcphdr_len + plen - 1]; // Get the last byte of the buffer
         sum += last << 8; // Add the last byte to the checksum, shifted left by 8 bits
     }
 
+    free(buf);
+
     // Calculate the final checksum
-    while (sum >> 16) { // If the checksum has a carry bit, add it to the lower 16 bits
+    while (sum >> 16) {
         sum = (sum & 0xFFFF) + (sum >> 16);
     }
-    uint16_t csum = ~sum; // Take the one's complement of the sum to get the final checksum
 
-    delete[] buf; // Free the buffer
-
-    return csum; // Return the calculated checksum
+    // Take the one's complement of the sum to get the final checksum
+    return ~sum; 
 }
 
 uint8_t *dissect_tcp(Net *net, Txp *self, uint8_t *segm, size_t segm_len)
