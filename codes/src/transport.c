@@ -21,6 +21,22 @@ uint8_t *dissect_tcp(Net *net, Txp *self, uint8_t *segm, size_t segm_len)
     // [TODO]: Collect information from segm
     // (Check IP addr & port to determine the next seq and ack value)
     // Return payload of TCP
+
+    // Check the validity of the function arguments
+    if (!net || !self || !segm) {
+        fprintf(stderr, "Invalid arguments of %s().\n", __func__);
+        reture NULL;
+    }
+
+    // Check if the segment length is valid
+    if (segm_len < sizeof(struct tcphdr)) {
+        fprintf(stderr, "Invalid TCP segment length.\n");
+        return NULL;
+    }
+
+    // Copy TCP header from the segment
+    memcpy(&self->thdr, segm, sizeof(struct tcphdr));
+    
 }
 
 Txp *fmt_tcp_rep(Txp *self, struct iphdr iphdr, uint8_t *data, size_t dlen)

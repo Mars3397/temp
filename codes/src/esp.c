@@ -80,7 +80,7 @@ uint8_t *dissect_esp(Esp *self, uint8_t *esp_pkt, size_t esp_len)
     memcpy(&self->tlr, esp_pkt + esp_len - sizeof(EspTrailer), sizeof(EspTrailer));
 
     // Allocate memory for ESP padding
-    self->pad = malloc(self->tlr.pad_len);
+    self->pad = (uint8_t *)malloc(self->tlr.pad_len);
     if (!self->pad) {
         fprintf(stderr, "Failed to allocate memory for ESP padding.\n");
         return NULL;
@@ -92,7 +92,7 @@ uint8_t *dissect_esp(Esp *self, uint8_t *esp_pkt, size_t esp_len)
     self->plen = esp_len - sizeof(EspTrailer) - self->tlr.pad_len;
 
     // Allocate memory for ESP payload
-    self->pl = malloc(self->plen);
+    self->pl = (uint8_t *)malloc(self->plen);
     if (!self->pl) {
         fprintf(stderr, "Failed to allocate memory for ESP payload.\n");
         return NULL;
