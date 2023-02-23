@@ -79,12 +79,24 @@ uint8_t *dissect_esp(Esp *self, uint8_t *esp_pkt, size_t esp_len)
     // Copy ESP trailer from the packet
     memcpy(&self->tlr, esp_pkt + esp_len - sizeof(EspTrailer), sizeof(EspTrailer));
 
+    // Allocate memory for ESP padding
+    self->pad = malloc(self->tlr.pad_len);
+    if (!self->pad) {
+        fprintf(stderr, "Failed to allocate memory for ESP padding.\n");
+        return NULL;
+    }
     // Copy ESP padding from the packet
     memcpy(self->pad, esp_pkt + esp_len - sizeof(EspTrailer) - self->tlr.pad_len, self->tlr.pad_len);
     
     // Get ESP payload length from the padding length field in the trailer
     self->plen = esp_len - sizeof(EspTrailer) - self->tlr.pad_len;
 
+    // Allocate memory for ESP payload
+    self->pl = malloc(self->plen);
+    if (!self->pl) {
+        fprintf(stderr, "Failed to allocate memory for ESP payload.\n");
+        return NULL;
+    }
     // Copy ESP payload from the packet
     memcpy(self->pl, esp_pkt, self->plen);
 
