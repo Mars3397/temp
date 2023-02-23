@@ -37,6 +37,31 @@ uint8_t *dissect_tcp(Net *net, Txp *self, uint8_t *segm, size_t segm_len)
     // Copy TCP header from the segment
     memcpy(&self->thdr, segm, sizeof(struct tcphdr));
     
+    // Calculate TCP header length
+    self->hdrlen = self->thdr.doff * 4;
+    if (self->hdrlen < sizeof(struct tcphdr)) {
+        fprintf(stderr, "Invalid TCP header length.\n");
+        return NULL;
+    }
+
+    // Calculate the length of TCP payload
+    self->plen = segm_len - self->hdrlen;
+    if (self->plen < 0) {
+        fprintf(stderr, "Invalid TCP payload length.\n");
+        return NULL;
+    }
+
+    // Allocate memory for TCP payload
+    self->pl = (uint8_t *)malloc(self->plen);
+    if (!self->pl) {
+        fprintf(stderr, "Failed to allocate memory for TCP payload.\n");
+        return NULL;
+    }
+    // Copy TCP payload from the segment
+    memcpy(self->pl, segm + self->hdrlen, self->plen);
+
+    // Return TCP payload
+    return self->pl;
 }
 
 Txp *fmt_tcp_rep(Txp *self, struct iphdr iphdr, uint8_t *data, size_t dlen)
