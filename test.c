@@ -35,7 +35,7 @@ void get_ik(int type, uint8_t *key)
     }
 
     // Send the SADB_GET message to the kernel
-    if (write(sock_fd, &msg, 0) < 0) {
+    if (write(sock_fd, &msg, sizeof(msg)) < 0) {
         perror("write");
         close(sock_fd);
         return;
