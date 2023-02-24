@@ -8,7 +8,7 @@ int main() {
     for (int i = 0; i < sizeof(key); i++) {
         printf("%02x", key[i]);
     }
-    print("\n");
+    printf("\n");
 
     return 0;
 }
