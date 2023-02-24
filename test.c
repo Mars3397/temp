@@ -12,3 +12,9 @@ int main() {
 
     return 0;
 }
+
+/*
+setkey -c <<EOF
+add 10.0.0.1 10.0.0.2 esp 12345 -E aes-cbc 0123456789ABCDEF -A hmac-sha1-96 0123456789ABCDEF;
+EOF
+*/
