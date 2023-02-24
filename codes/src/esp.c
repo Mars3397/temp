@@ -35,12 +35,16 @@ void get_ik(int type, uint8_t *key)
     msg.sadb_msg_type = SADB_GET;
     msg.sadb_msg_satype = type;
     msg.sadb_msg_len = sizeof(msg) / 8;
+    memset(&sa, 0, sizeof(sa));
     sa.sadb_sa_len = sizeof(sa) / 8;
     sa.sadb_sa_exttype = SADB_EXT_SA;
+    memset(&src, 0, sizeof(src));
     src.sadb_address_len = sizeof(src) / 8;
     src.sadb_address_exttype = SADB_EXT_ADDRESS_SRC;
+    memset(&dst, 0, sizeof(dst));
     dst.sadb_address_len = sizeof(dst) / 8;
     dst.sadb_address_exttype = SADB_EXT_ADDRESS_DST;
+    memset(&iov, 0, sizeof(iov));
     iov.iov_base = &msg;
     iov.iov_len = sizeof(msg);
     memset(&msg_hdr, 0, sizeof(msg_hdr));
