@@ -132,7 +132,7 @@ uint8_t *dissect_esp(Esp *self, uint8_t *esp_pkt, size_t esp_len)
     // Check the validity of the function arguments
     if (!self || !esp_pkt) {
         fprintf(stderr, "Invalid arguments of %s().\n", __func__);
-        reture NULL;
+        return NULL;
     }
 
     // Check if the packet length is valid
