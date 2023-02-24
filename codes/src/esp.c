@@ -79,7 +79,7 @@ void get_ik(int type, uint8_t *key)
             memcpy(key, (char *)key_ext + sizeof(struct sadb_key), key_ext->sadb_key_bits / 8);
             break;
         }
-        ext = (struct sadb_ext *)((char *)ext + PFKEY_ALIGN8(ext->sadb_ext_len) * 8);
+        ext = (struct sadb_ext *)((char *)ext + PFKEY_ALIGN8LEN(ext->sadb_ext_len) * 8);
     }
 
     close(sock_fd);
