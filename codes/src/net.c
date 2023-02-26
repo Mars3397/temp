@@ -51,8 +51,33 @@ uint8_t *dissect_ip(Net *self, uint8_t *pkt, size_t pkt_len)
 
 Net *fmt_net_rep(Net *self)
 {
-    // [TODO]: Fill up self->ip4hdr (prepare to send)
-
+    // [TODO]: Fill up self->ip4hdr (prepare to send
+    
+    if (!self) {
+        fprintf(stderr, "Invalid arguments of %s().\n", __func__);
+        return NULL;
+    }
+    
+    // Set the source and destination IP addresses in the IP header
+    if (inet_pton(AF_INET, self->src_ip, &(self->ip4hdr.saddr)) != 1) {
+        fprintf(stderr, "Invalid source IP address.\n");
+        return NULL;
+    }
+    
+    if (inet_pton(AF_INET, self->dst_ip, &(self->ip4hdr.daddr)) != 1) {
+        fprintf(stderr, "Invalid destination IP address.\n");
+        return NULL;
+    }
+    
+    // Set the protocol number in the IP header
+    self->ip4hdr.protocol = self->pro;
+    
+    // Set the total length of the IP packet
+    self->ip4hdr.tot_len = htons(self->plen + sizeof(struct iphdr));
+    
+    // Calculate the IP header checksum
+    self->ip4hdr.check = cal_ipv4_cksm(self->ip4hdr);
+    
     return self;
 }
 
