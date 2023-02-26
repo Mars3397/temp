@@ -72,6 +72,14 @@ void get_esp_key(Esp *self)
 uint8_t *set_esp_pad(Esp *self)
 {
     // [TODO]: Fiill up self->pad and self->pad_len (Ref. RFC4303 Section 2.4)
+    
+    // Calculate the length of the padding needed and store in ESP trailer
+    self->tlr.pad_len = 64 - (self->plen % 64);
+
+    // Allocate memory for the padding and set all bytes to the padding length
+    self->pad = (uint8_t *)malloc(self->tlr.pad_len);
+    memset(self->pad, self->tlr.pad_len, self->tlr.pad_len);
+
     return self->pad;
 }
 
@@ -91,6 +99,10 @@ uint8_t *set_esp_auth(Esp *self,
     ssize_t ret;
 
     // [TODO]: Put everything needed to be authenticated into buff and add up nb
+    memcpy(buff, &self->hdr, sizeof(EspHeader));        nb += sizeof(EspHeader);
+    memcpy(buff + nb, &self->pl, self->plen);           nb += self->plen;
+    memcpy(buff + nb, &self->pad, self->tlr.pad_len);   nb += self->tlr.pad_len;
+    memcpy(buff + nb, &self->tlr, sizeof(EspTrailer));  nb += sizeof(EspTrailer);
 
     ret = hmac(self->esp_key, esp_keylen, buff, nb, self->auth);
 
@@ -155,6 +167,21 @@ uint8_t *dissect_esp(Esp *self, uint8_t *esp_pkt, size_t esp_len)
 Esp *fmt_esp_rep(Esp *self, Proto p)
 {
     // [TODO]: Fill up ESP header and trailer (prepare to send)
+    
+    // Trailer
+    // -------------------------
+    // Set up padding and padding length
+    set_esp_pad(self);
+
+    // The value of "next" in the ESP trailer indicates the protocol that 
+    // should follow the ESP protocol (eg. ICMP, TCP)
+    self->tlr.nxt = p;
+
+    // Header
+    // -------------------------
+    
+
+    return self;
 }
 
 void init_esp(Esp *self)

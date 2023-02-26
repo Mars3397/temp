@@ -98,7 +98,7 @@ void fmt_frame(Dev *self, Net net, Esp esp, Txp txp)
     memcpy(frame_ptr + offset, &txp.thdr, txp.hdrlen);          offset += txp.hdrlen;
     memcpy(frame_ptr + offset, &txp.pl, txp.plen);              offset += txp.plen;
     memcpy(frame_ptr + offset, &esp.tlr, sizeof(EspTrailer));   offset += sizeof(EspTrailer);
-    memcpy(frame_ptr + offset, &esp.auth, esp.authlen);
+    memcpy(frame_ptr + offset, &esp.auth, esp.authlen);         offset += esp.authlen;
 
     // uint16_t framelen;
     // ---------------------------
