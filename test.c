@@ -43,14 +43,14 @@ void get_ik(int type, uint8_t *key)
 
     // Receive the SADB_GET message response from the kernel
     char buf[1024];
-    ssize_t len = recv(sock_fd, buf, sizeof(buf), 0);
+    memset(&buf, 0, 1024);
+    ssize_t len = recv(sock_fd, &buf, 1024, 0);
+    printf("%s", buf);
     if (len < 0) {
         perror("read");
         close(sock_fd);
         return;
     }
-
-    puts(buf);
 
     // Parse the SADB_GET message response to retrieve the authentication key
     // struct sadb_ext *ext = (struct sadb_ext *)(buf + sizeof(struct sadb_msg));

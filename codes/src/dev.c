@@ -85,19 +85,18 @@ void fmt_frame(Dev *self, Net net, Esp esp, Txp txp)
     // --------------------------
     // Declare a 8 bit pointer point to the memory location of self->frame
     uint8_t *frame_ptr = &(self->frame);
-    // Same for net, esp and txp
-    uint8_t *net_ptr = &(net);
-    uint8_t *esp_ptr = &(esp);
-    uint8_t *txp_ptr = &(txp);
-    // Copy the memeory content from net, esp and txp to to store in self->frame
-    memcpy(frame_ptr, net_ptr, strlen(net_ptr));
-    memcpy(frame_ptr + strlen(net_ptr), esp_ptr, strlen(esp_ptr));
-    memcpy(frame_ptr + strlen(net_ptr) + strlen(esp_ptr), txp_ptr, strlen(txp_ptr));
+    size_t offset = 0;
+    // copy memory content to frame according to the order of trasport mode
+    memcpy(frame_ptr, &net.ip4hdr, net.hdrlen);                 offset += net.hdrlen;
+    memcpy(frame_ptr + offset, &esp.hdr, sizeof(EspHeader));    offset += sizeof(EspHeader);
+    memcpy(frame_ptr + offset, &txp.thdr, txp.hdrlen);          offset += txp.hdrlen;
+    memcpy(frame_ptr + offset, &txp.pl, txp.plen);              offset += txp.plen;
+    memcpy(frame_ptr + offset, &esp.tlr, sizeof(EspTrailer));   offset += sizeof(EspTrailer);
+    memcpy(frame_ptr + offset, &esp.auth, esp.authlen);
 
     // uint16_t framelen;
     // ---------------------------
-    // framelen is the sum of the length of net, esp and txp
-    self->framelen = strlen(net_ptr) + strlen(esp_ptr) + strlen(txp_ptr);
+    self->framelen = offset;
 }
 
 ssize_t tx_frame(Dev *self)
