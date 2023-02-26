@@ -15,6 +15,20 @@
 uint16_t cal_ipv4_cksm(struct iphdr iphdr)
 {
     // [TODO]: Finish IP checksum calculation
+    uint16_t *buffer = (uint16_t *)&iphdr;
+    size_t hdr_len = iphdr.ihl * 4;
+    uint32_t sum = 0;
+
+    // Calculate the checksum for the IP header
+    for (size_t i = 0; i < hdr_len / 2; i++) {
+        sum += buffer[i];
+    }
+
+    while (sum >> 16) {
+        sum = (sum & 0xffff) + (sum >> 16);
+    }
+
+    return ~sum;
 }
 
 uint8_t *dissect_ip(Net *self, uint8_t *pkt, size_t pkt_len)
