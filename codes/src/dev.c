@@ -84,7 +84,7 @@ void fmt_frame(Dev *self, Net net, Esp esp, Txp txp)
     // uint8_t *frame;
     // --------------------------
     // Declare a 8 bit pointer point to the memory location of self->frame
-    uint8_t *frame_ptr = &(self->frame);
+    uint8_t *frame_ptr = self->frame;
     size_t offset = 0;
     // define link layer header
     struct ethhdr eth;

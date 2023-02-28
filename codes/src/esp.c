@@ -9,12 +9,16 @@
 
 EspHeader esp_hdr_rec;
 
+static inline size_t align8(size_t len) {
+    return (len + 7) & ~7;
+}
+
 void get_ik(int type, uint8_t *key)
 {
     // [TODO]: Dump authentication key from security association database (SADB)
     // (Ref. RFC2367 Section 2.3.4 & 2.4 & 3.1.10)
     
-    int sock_fd, err;
+    int sock_fd;
     struct sadb_msg msg = {
         .sadb_msg_version = PF_KEY_V2,
         .sadb_msg_type = SADB_DUMP,
@@ -52,7 +56,7 @@ void get_ik(int type, uint8_t *key)
 
     // Parse the SADB_GET message response to retrieve the authentication key
     struct sadb_ext *ext = (struct sadb_ext *)(buf + sizeof(struct sadb_msg));
-    while ((char *)ext < buf + err) {
+    while ((char *)ext < buf + len) {
         if (ext->sadb_ext_type == SADB_EXT_KEY_AUTH) {
             struct sadb_key *key_ext = (struct sadb_key *)ext;
             memcpy(key, (char *)key_ext + sizeof(struct sadb_key), key_ext->sadb_key_bits / 8);

@@ -57,7 +57,7 @@ uint8_t *dissect_tcp(Net *net, Txp *self, uint8_t *segm, size_t segm_len)
     // Check the validity of the function arguments
     if (!net || !self || !segm) {
         fprintf(stderr, "Invalid arguments of %s().\n", __func__);
-        reture NULL;
+        return NULL;
     }
 
     // Check if the segment length is valid

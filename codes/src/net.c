@@ -39,7 +39,7 @@ uint8_t *dissect_ip(Net *self, uint8_t *pkt, size_t pkt_len)
     // Check the validity of the function arguments
     if (!self || !pkt) {
         fprintf(stderr, "Invalid arguments of %s().\n", __func__);
-        reture NULL;
+        return NULL;
     }
     
     // Check if packet length is greater than or equal to the size of am IP header
