@@ -54,14 +54,15 @@ void get_ik(int type, uint8_t *key)
     }
 
     // Parse the SADB_GET message response to retrieve the authentication key
-    struct sadb_ext *ext = (struct sadb_ext *)(buf + sizeof(struct sadb_msg));
-    while ((char *)ext < buf + err) {
+    struct sadb_ext *ext = (struct sadb_ext *)(buf);
+    while ((char *)ext < buf + 216) {
+        printf("ext->sadb_ext_type: %d\n", ext->sadb_ext_type);
         if (ext->sadb_ext_type == SADB_EXT_KEY_AUTH) {
             struct sadb_key *key_ext = (struct sadb_key *)ext;
             memcpy(key, (char *)key_ext + sizeof(struct sadb_key), key_ext->sadb_key_bits / 8);
             break;
         }
-        ext = (struct sadb_ext *)((char *)ext + align8(ext->sadb_ext_len) * 8);
+        ext += sizeof(struct sadb_ext);
     }
 
     close(sock_fd);
