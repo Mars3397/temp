@@ -53,7 +53,7 @@ void get_ik(int type, uint8_t *key)
         return;
     }
 
-    // Parse the SADB_GET message response to retrieve the authentication key
+    // Parse the SADB_DUMP response to retrieve the authentication key
     struct sadb_ext *ext = (struct sadb_ext *)(buf);
     while ((char *)ext < buf + 216) {
         printf("ext->sadb_ext_type: %d\n", ext->sadb_ext_type);
