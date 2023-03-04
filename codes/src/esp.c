@@ -155,6 +155,7 @@ uint8_t *dissect_esp(Esp *self, uint8_t *esp_pkt, size_t esp_len)
     
     // Get ESP payload length from the padding length field in the trailer
     self->plen = esp_len - sizeof(EspTrailer) - self->tlr.pad_len;
+    printf("%ld\n", self->plen);
 
     // Allocate memory for ESP payload
     self->pl = (uint8_t *)malloc(self->plen);
