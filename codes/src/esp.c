@@ -9,16 +9,12 @@
 
 EspHeader esp_hdr_rec;
 
-static inline size_t align8(size_t len) {
-    return (len + 7) & ~7;
-}
-
 void get_ik(int type, uint8_t *key)
 {
     // [TODO]: Dump authentication key from security association database (SADB)
     // (Ref. RFC2367 Section 2.3.4 & 2.4 & 3.1.10)
     
-    int sock_fd;
+    int sock_fd, err;
     struct sadb_msg msg = {
         .sadb_msg_version = PF_KEY_V2,
         .sadb_msg_type = SADB_DUMP,
@@ -55,16 +51,17 @@ void get_ik(int type, uint8_t *key)
         return;
     }
 
+    printf("%ld\n", sizeof(struct sadb_ext));
     // Parse the SADB_DUMP response to retrieve the authentication key
-    struct sadb_ext *ext = (struct sadb_ext *)(buf);
+    struct sadb_ext *ext = (struct sadb_ext *)(buf + 16);
     while ((char *)ext < buf + 216) {
-        printf("ext->sadb_ext_type: %d\n", ext->sadb_ext_type);
+        printf("ext->sadb_ext_type: %d, len: %d\n", ext->sadb_ext_type, ext->sadb_ext_len);
         if (ext->sadb_ext_type == SADB_EXT_KEY_AUTH) {
             struct sadb_key *key_ext = (struct sadb_key *)ext;
             memcpy(key, (char *)key_ext + sizeof(struct sadb_key), key_ext->sadb_key_bits / 8);
             break;
         }
-        ext += sizeof(struct sadb_ext);
+        ext += ext->sadb_ext_len * 2;
     }
 
     close(sock_fd);
@@ -144,7 +141,7 @@ uint8_t *dissect_esp(Esp *self, uint8_t *esp_pkt, size_t esp_len)
     esp_len -= sizeof(EspHeader);
 
     // Copy ESP trailer from the packet
-    memcpy(&self->tlr, esp_pkt + esp_len - sizeof(EspTrailer), sizeof(EspTrailer));
+    memcpy(&self->tlr, esp_pkt + esp_len - sizeof(EspTrailer) - HMAC96AUTHLEN, sizeof(EspTrailer));
 
     // Allocate memory for ESP padding
     self->pad = (uint8_t *)malloc(self->tlr.pad_len);
@@ -153,11 +150,11 @@ uint8_t *dissect_esp(Esp *self, uint8_t *esp_pkt, size_t esp_len)
         return NULL;
     }
     // Copy ESP padding from the packet
-    memcpy(self->pad, esp_pkt + esp_len - sizeof(EspTrailer) - self->tlr.pad_len, self->tlr.pad_len);
+    memcpy(self->pad, esp_pkt + esp_len - HMAC96AUTHLEN - sizeof(EspTrailer) - self->tlr.pad_len, self->tlr.pad_len);
     
     // Get ESP payload length from the padding length field in the trailer
-    self->plen = esp_len - sizeof(EspTrailer) - self->tlr.pad_len;
-    printf("%ld\n", self->plen);
+    self->plen = esp_len - HMAC96AUTHLEN - sizeof(EspTrailer) - self->tlr.pad_len;
+    printf("self->plen: %ld\n", self->plen);
 
     // Allocate memory for ESP payload
     self->pl = (uint8_t *)malloc(self->plen);
