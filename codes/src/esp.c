@@ -18,7 +18,7 @@ void get_ik(int type, uint8_t *key)
     // [TODO]: Dump authentication key from security association database (SADB)
     // (Ref. RFC2367 Section 2.3.4 & 2.4 & 3.1.10)
     
-    int sock_fd, err;
+    int sock_fd;
     struct sadb_msg msg = {
         .sadb_msg_version = PF_KEY_V2,
         .sadb_msg_type = SADB_DUMP,
