@@ -79,11 +79,11 @@ uint8_t *set_esp_pad(Esp *self)
     }
     
     // Calculate the length of the padding needed and store in ESP trailer
-    self->tlr.pad_len = 64 - (self->plen % 64);
+    self->tlr.pad_len = (64 - (self->plen % 64)) / 8;
 
     // Allocate memory for the padding and set all bytes to the padding length
     self->pad = (uint8_t *)malloc(self->tlr.pad_len);
-    memset(self->pad, self->tlr.pad_len, self->tlr.pad_len);
+    memset(self->pad, 0, self->tlr.pad_len);
 
     return self->pad;
 }
@@ -117,6 +117,7 @@ uint8_t *set_esp_auth(Esp *self,
     }
 
     self->authlen = ret;
+
     return self->auth;
 }
 
@@ -176,12 +177,12 @@ Esp *fmt_esp_rep(Esp *self, Proto p)
 
     // AH
     // -------------------------
-    self->auth = set_esp_auth(self, hmac_sha1_96);
+    //self->auth = set_esp_auth(self, hmac_sha1_96);
     
     // Trailer
     // -------------------------
     // Set up padding and padding length
-    set_esp_pad(self);
+    //set_esp_pad(self);
 
     // The value of "next" in the ESP trailer indicates the protocol that 
     // should follow the ESP protocol (eg. ICMP, TCP)
@@ -189,7 +190,8 @@ Esp *fmt_esp_rep(Esp *self, Proto p)
 
     // Header
     // -------------------------
-    self->hdr.seq = 0;
+
+    self->hdr.seq += 0x1000000;
 
     return self;
 }

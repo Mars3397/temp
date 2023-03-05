@@ -87,16 +87,16 @@ void fmt_frame(Dev *self, Net net, Esp esp, Txp txp)
     uint8_t *frame_ptr = self->frame;
     size_t offset = 0;
     // define link layer header
-    struct ethhdr eth;
-    memcpy(eth.h_source, net.x_src_ip, ETH_ALEN);
-    memcpy(eth.h_dest, net.x_dst_ip, ETH_ALEN);
-    eth.h_proto = htons(ETH_P_IP);
     // copy memory content to frame according to the order of trasport mode
-    memcpy(frame_ptr + offset, &eth, LINKHDRLEN);               offset += LINKHDRLEN;
+    // struct ethhdr eth;
+    // struct ethhdr *eth_ptr = (struct ethhdr *)self->linkhdr;
+    // printf("ethhdr->h_source: %s\n", eth_ptr->h_source);
+    memcpy(frame_ptr + offset, self->linkhdr, LINKHDRLEN);      offset += LINKHDRLEN;
     memcpy(frame_ptr + offset, &net.ip4hdr, net.hdrlen);        offset += net.hdrlen;
     memcpy(frame_ptr + offset, &esp.hdr, sizeof(EspHeader));    offset += sizeof(EspHeader);
     memcpy(frame_ptr + offset, &txp.thdr, txp.hdrlen);          offset += txp.hdrlen;
     memcpy(frame_ptr + offset, &txp.pl, txp.plen);              offset += txp.plen;
+    memcpy(frame_ptr + offset, &esp.pad, esp.tlr.pad_len);	offset += esp.tlr.pad_len;
     memcpy(frame_ptr + offset, &esp.tlr, sizeof(EspTrailer));   offset += sizeof(EspTrailer);
     memcpy(frame_ptr + offset, &esp.auth, esp.authlen);         offset += esp.authlen;
 

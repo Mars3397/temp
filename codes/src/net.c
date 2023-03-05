@@ -50,14 +50,18 @@ uint8_t *dissect_ip(Net *self, uint8_t *pkt, size_t pkt_len)
 
     // Cast the packet as an IP header struct
     struct iphdr *iph = (struct iphdr *)pkt;
+    memcpy(&self->ip4hdr, pkt, sizeof(struct iphdr));
 
     // Set the IP source and destination address
     inet_ntop(AF_INET, &(iph->saddr), self->src_ip, INET6_ADDRSTRLEN);
     inet_ntop(AF_INET, &(iph->daddr), self->dst_ip, INET6_ADDRSTRLEN);
+    inet_ntop(AF_INET, &(iph->saddr), self->x_src_ip, INET6_ADDRSTRLEN);
+    inet_ntop(AF_INET, &(iph->daddr), self->x_dst_ip, INET6_ADDRSTRLEN);
 
     // Set the protocol number and payload length
     self->pro = (Proto)iph->protocol;
-    self->plen = ntohs(iph->tot_len) - sizeof(struct iphdr);
+    self->hdrlen = iph->ihl * 4;
+    self->plen = ntohs(iph->tot_len) - self->hdrlen;
 
     // Return a pointer to the payload
     return pkt + self->hdrlen;
@@ -85,7 +89,7 @@ Net *fmt_net_rep(Net *self)
     
     // Hint 2
     // Set the total length of the IP packet
-    self->ip4hdr.tot_len = htons(self->plen + sizeof(struct iphdr));
+    self->ip4hdr.tot_len = htons(self->plen + self->hdrlen);
     
     // Calculate the IP header checksum
     self->ip4hdr.check = cal_ipv4_cksm(self->ip4hdr);

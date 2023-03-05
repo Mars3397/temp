@@ -72,12 +72,13 @@ uint8_t *dissect_tcp(Net *net, Txp *self, uint8_t *segm, size_t segm_len)
     // Calculate TCP header length
     self->hdrlen = self->thdr.doff * 4;
     if (self->hdrlen < sizeof(struct tcphdr)) {
-        fprintf(stderr, "Invalid TCP header length.\n");
+        fprintf(stderr, "Invalid TCP header length (%d).\n", self->hdrlen);
         return NULL;
     }
 
     // Calculate the length of TCP payload
     self->plen = segm_len - self->hdrlen;
+    // printf("tcp payload length: %d\n", self->plen);
     if (self->plen < 0) {
         fprintf(stderr, "Invalid TCP payload length.\n");
         return NULL;
@@ -104,8 +105,8 @@ Txp *fmt_tcp_rep(Txp *self, struct iphdr iphdr, uint8_t *data, size_t dlen)
     // Fill up the TCP header
     self->thdr.seq = htonl(self->x_tx_seq);
     self->thdr.ack_seq = htonl(self->x_tx_ack);
-    self->thdr.check = cal_tcp_cksm(iphdr, self->thdr, data, dlen);
     self->thdr.psh = 1;
+    self->thdr.check = cal_tcp_cksm(iphdr, self->thdr, self->pl, dlen);
     
     return self;
 }
