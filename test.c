@@ -16,7 +16,7 @@ void get_ik(int type, uint8_t *key)
     // [TODO]: Dump authentication key from security association database (SADB)
     // (Ref. RFC2367 Section 2.3.4 & 2.4 & 3.1.10)
     
-    int sock_fd, err;
+    int sock_fd;
     struct sadb_msg msg = {
         .sadb_msg_version = PF_KEY_V2,
         .sadb_msg_type = SADB_DUMP,
@@ -46,14 +46,12 @@ void get_ik(int type, uint8_t *key)
     // Receive the SADB_GET message response from the kernel
     char buf[1024];
     ssize_t len = read(sock_fd, &buf, 1024);
-    printf("%ld\n", len);
     if (len < 0) {
         perror("read");
         close(sock_fd);
         return;
     }
 
-    printf("%ld\n", sizeof(struct sadb_ext));
     // Parse the SADB_DUMP response to retrieve the authentication key
     struct sadb_ext *ext = (struct sadb_ext *)(buf + 16);
     while ((char *)ext < buf + 216) {

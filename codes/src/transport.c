@@ -100,24 +100,12 @@ Txp *fmt_tcp_rep(Txp *self, struct iphdr iphdr, uint8_t *data, size_t dlen)
 {
     // [TODO]: Fill up self->tcphdr (prepare to send)
     
+    // Hint 2
     // Fill up the TCP header
-    self->thdr.source = htons(self->x_dst_port);
-    self->thdr.dest = htons(self->x_src_port);
     self->thdr.seq = htonl(self->x_tx_seq);
     self->thdr.ack_seq = htonl(self->x_tx_ack);
-    self->thdr.doff = sizeof(struct tcphdr) / 4;
-    self->thdr.window = htons(65535); // maximum window size
-    self->thdr.check = 0;
-    self->thdr.urg_ptr = 0;
-
-    // Compute the TCP checksum
-    uint16_t tcp_cksm = cal_tcp_cksm(iphdr, self->thdr, data, dlen);
-    self->thdr.check = tcp_cksm;
-
-    // Set the header length and payload
-    self->hdrlen = sizeof(struct tcphdr);
-    self->pl = data;
-    self->plen = dlen;
+    self->thdr.check = cal_tcp_cksm(iphdr, self->thdr, data, dlen);
+    self->thdr.psh = 1;
     
     return self;
 }

@@ -83,9 +83,7 @@ Net *fmt_net_rep(Net *self)
         return NULL;
     }
     
-    // Set the protocol number in the IP header
-    self->ip4hdr.protocol = self->pro;
-    
+    // Hint 2
     // Set the total length of the IP packet
     self->ip4hdr.tot_len = htons(self->plen + sizeof(struct iphdr));
     

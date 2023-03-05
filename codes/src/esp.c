@@ -14,7 +14,7 @@ void get_ik(int type, uint8_t *key)
     // [TODO]: Dump authentication key from security association database (SADB)
     // (Ref. RFC2367 Section 2.3.4 & 2.4 & 3.1.10)
     
-    int sock_fd, err;
+    int sock_fd;
     struct sadb_msg msg = {
         .sadb_msg_version = PF_KEY_V2,
         .sadb_msg_type = SADB_DUMP,
@@ -44,18 +44,15 @@ void get_ik(int type, uint8_t *key)
     // Receive the SADB_GET message response from the kernel
     char buf[1024];
     ssize_t len = read(sock_fd, &buf, 1024);
-    printf("%ld\n", len);
     if (len < 0) {
         perror("read");
         close(sock_fd);
         return;
     }
 
-    printf("%ld\n", sizeof(struct sadb_ext));
     // Parse the SADB_DUMP response to retrieve the authentication key
     struct sadb_ext *ext = (struct sadb_ext *)(buf + 16);
     while ((char *)ext < buf + 216) {
-        printf("ext->sadb_ext_type: %d, len: %d\n", ext->sadb_ext_type, ext->sadb_ext_len);
         if (ext->sadb_ext_type == SADB_EXT_KEY_AUTH) {
             struct sadb_key *key_ext = (struct sadb_key *)ext;
             memcpy(key, (char *)key_ext + sizeof(struct sadb_key), key_ext->sadb_key_bits / 8);
@@ -75,6 +72,11 @@ void get_esp_key(Esp *self)
 uint8_t *set_esp_pad(Esp *self)
 {
     // [TODO]: Fiill up self->pad and self->pad_len (Ref. RFC4303 Section 2.4)
+
+    if (!self) {
+        fprintf(stderr, "Invalid arguments of %s().\n", __func__);
+        return NULL;
+    }
     
     // Calculate the length of the padding needed and store in ESP trailer
     self->tlr.pad_len = 64 - (self->plen % 64);
@@ -154,7 +156,7 @@ uint8_t *dissect_esp(Esp *self, uint8_t *esp_pkt, size_t esp_len)
     
     // Get ESP payload length from the padding length field in the trailer
     self->plen = esp_len - HMAC96AUTHLEN - sizeof(EspTrailer) - self->tlr.pad_len;
-    printf("self->plen: %ld\n", self->plen);
+    // printf("self->plen: %ld\n", self->plen);
 
     // Allocate memory for ESP payload
     self->pl = (uint8_t *)malloc(self->plen);
@@ -171,6 +173,10 @@ uint8_t *dissect_esp(Esp *self, uint8_t *esp_pkt, size_t esp_len)
 Esp *fmt_esp_rep(Esp *self, Proto p)
 {
     // [TODO]: Fill up ESP header and trailer (prepare to send)
+
+    // AH
+    // -------------------------
+    self->auth = set_esp_auth(self, hmac_sha1_96);
     
     // Trailer
     // -------------------------
@@ -183,7 +189,7 @@ Esp *fmt_esp_rep(Esp *self, Proto p)
 
     // Header
     // -------------------------
-    
+    self->hdr.seq = 0;
 
     return self;
 }
