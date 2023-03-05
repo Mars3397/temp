@@ -79,10 +79,16 @@ uint8_t *set_esp_pad(Esp *self)
     }
     
     // Calculate the length of the padding needed and store in ESP trailer
-    self->tlr.pad_len = (64 - (self->plen % 64)) / 8;
+    self->tlr.pad_len = (8 - (self->plen + sizeof(EspTrailer)) % 8);
 
     // Allocate memory for the padding and set all bytes to the padding length
-    self->pad = (uint8_t *)malloc(self->tlr.pad_len);
+    // self->pad = (uint8_t *)malloc(self->tlr.pad_len);
+
+    // uint8_t *pad_ptr = self->pad;
+    // for (int i = 1; i <= self->tlr.pad_len; i++) {
+// 	memset(pad_ptr + i - 1, i, 1);
+    // }
+    //
     memset(self->pad, 0, self->tlr.pad_len);
 
     return self->pad;
@@ -108,14 +114,13 @@ uint8_t *set_esp_auth(Esp *self,
     memcpy(buff + nb, &self->pl, self->plen);           nb += self->plen;
     memcpy(buff + nb, &self->pad, self->tlr.pad_len);   nb += self->tlr.pad_len;
     memcpy(buff + nb, &self->tlr, sizeof(EspTrailer));  nb += sizeof(EspTrailer);
-
     ret = hmac(self->esp_key, esp_keylen, buff, nb, self->auth);
-
+    
     if (ret == -1) {
         fprintf(stderr, "Error occurs when try to compute authentication data");
         return NULL;
     }
-
+	
     self->authlen = ret;
 
     return self->auth;
@@ -190,7 +195,6 @@ Esp *fmt_esp_rep(Esp *self, Proto p)
 
     // Header
     // -------------------------
-
     self->hdr.seq += 0x1000000;
 
     return self;

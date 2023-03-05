@@ -88,9 +88,6 @@ void fmt_frame(Dev *self, Net net, Esp esp, Txp txp)
     size_t offset = 0;
     // define link layer header
     // copy memory content to frame according to the order of trasport mode
-    // struct ethhdr eth;
-    // struct ethhdr *eth_ptr = (struct ethhdr *)self->linkhdr;
-    // printf("ethhdr->h_source: %s\n", eth_ptr->h_source);
     memcpy(frame_ptr + offset, self->linkhdr, LINKHDRLEN);      offset += LINKHDRLEN;
     memcpy(frame_ptr + offset, &net.ip4hdr, net.hdrlen);        offset += net.hdrlen;
     memcpy(frame_ptr + offset, &esp.hdr, sizeof(EspHeader));    offset += sizeof(EspHeader);

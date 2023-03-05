@@ -85,7 +85,6 @@ uint8_t *dissect_tcp(Net *net, Txp *self, uint8_t *segm, size_t segm_len)
     }
 
     // Allocate memory for TCP payload
-    self->pl = (uint8_t *)malloc(self->plen);
     if (!self->pl) {
         fprintf(stderr, "Failed to allocate memory for TCP payload.\n");
         return NULL;
@@ -106,8 +105,10 @@ Txp *fmt_tcp_rep(Txp *self, struct iphdr iphdr, uint8_t *data, size_t dlen)
     self->thdr.seq = htonl(self->x_tx_seq);
     self->thdr.ack_seq = htonl(self->x_tx_ack);
     self->thdr.psh = 1;
+    uint8_t *pl_ptr = self->pl;
+    memcpy(pl_ptr, &data, dlen);
     self->thdr.check = cal_tcp_cksm(iphdr, self->thdr, self->pl, dlen);
-    
+
     return self;
 }
 
