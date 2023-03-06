@@ -85,11 +85,9 @@ uint8_t *set_esp_pad(Esp *self)
     // self->pad = (uint8_t *)malloc(self->tlr.pad_len);
 
     // uint8_t *pad_ptr = self->pad;
-    // for (int i = 1; i <= self->tlr.pad_len; i++) {
-// 	memset(pad_ptr + i - 1, i, 1);
-    // }
-    //
-    memset(self->pad, 0, self->tlr.pad_len);
+    for (int i = 1; i <= self->tlr.pad_len; i++) {
+	memset(&(self->pad + i - 1), i, 1);
+    }
 
     return self->pad;
 }
