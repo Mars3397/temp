@@ -82,12 +82,12 @@ uint8_t *set_esp_pad(Esp *self)
     self->tlr.pad_len = (8 - (self->plen + sizeof(EspTrailer)) % 8);
 
     // Allocate memory for the padding and set all bytes to the padding length
-    // self->pad = (uint8_t *)malloc(self->tlr.pad_len);
 
-    // uint8_t *pad_ptr = self->pad;
+    uint8_t pad_ptr[self->tlr.pad_len];
     for (int i = 1; i <= self->tlr.pad_len; i++) {
-	memset(&(self->pad + i - 1), i, 1);
+	memset(&pad_ptr[i - 1], (uint8_t)(i), 1);
     }
+    memcpy(&self->pad, pad_ptr, self->tlr.pad_len);
 
     return self->pad;
 }
@@ -109,11 +109,12 @@ uint8_t *set_esp_auth(Esp *self,
 
     // [TODO]: Put everything needed to be authenticated into buff and add up nb
     memcpy(buff, &self->hdr, sizeof(EspHeader));        nb += sizeof(EspHeader);
-    memcpy(buff + nb, &self->pl, self->plen);           nb += self->plen;
+    memcpy(buff + nb, self->pl, self->plen);           nb += self->plen;
     memcpy(buff + nb, &self->pad, self->tlr.pad_len);   nb += self->tlr.pad_len;
     memcpy(buff + nb, &self->tlr, sizeof(EspTrailer));  nb += sizeof(EspTrailer);
-    ret = hmac(self->esp_key, esp_keylen, buff, nb, self->auth);
     
+    ret = hmac(self->esp_key, esp_keylen, buff, nb, self->auth);
+
     if (ret == -1) {
         fprintf(stderr, "Error occurs when try to compute authentication data");
         return NULL;

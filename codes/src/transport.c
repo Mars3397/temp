@@ -25,15 +25,17 @@ uint16_t cal_tcp_cksm(struct iphdr iphdr, struct tcphdr tcphdr, uint8_t *pl, int
 
     // Calculate the TCP header and payload checksum
     int tcphdr_len = tcphdr.th_off * 4; // Calculate the length of the TCP header
-    uint16_t *buf = (uint16_t *)malloc((tcphdr_len + plen) / 2 * sizeof(uint16_t)); // Create a buffer to store the TCP header and payload
+    uint8_t *buf = (uint8_t *)malloc((tcphdr_len + plen) * sizeof(uint8_t)); // Create a buffer to store the TCP header and payload
     memcpy(buf, &tcphdr, tcphdr_len); // Copy the TCP header to the buffer
-    memcpy(buf + tcphdr_len / 2, pl, plen); // Copy the payload to the buffer, starting at the midpoint of the buffer
+    memcpy(buf + tcphdr_len, pl, plen); // Copy the payload to the buffer, starting at the midpoint of the buffer
 
+    uint16_t buffer[(tcphdr_len + plen) / 2];
+    memcpy(buffer, &buf, (tcphdr_len + plen) / 2);
     for (int i = 0; i < (tcphdr_len + plen) / 2; i++) { // Loop over the buffer, 16 bits at a time
-        sum += buf[i]; // Add each 16-bit value to the checksum, after converting to host byte order
+        sum += buffer[i]; // Add each 16-bit value to the checksum, after converting to host byte order
     }
     if ((tcphdr_len + plen) % 2 == 1) { // If the length of the TCP header and payload is odd
-        uint16_t last = ((uint8_t *)buf)[tcphdr_len + plen - 1]; // Get the last byte of the buffer
+        uint16_t last = ((uint8_t *)buffer)[tcphdr_len + plen - 1]; // Get the last byte of the buffer
         sum += last << 8; // Add the last byte to the checksum, shifted left by 8 bits
     }
 
@@ -105,8 +107,7 @@ Txp *fmt_tcp_rep(Txp *self, struct iphdr iphdr, uint8_t *data, size_t dlen)
     self->thdr.seq = htonl(self->x_tx_seq);
     self->thdr.ack_seq = htonl(self->x_tx_ack);
     self->thdr.psh = 1;
-    uint8_t *pl_ptr = self->pl;
-    memcpy(pl_ptr, &data, dlen);
+    memcpy(self->pl, data, dlen);
     self->thdr.check = cal_tcp_cksm(iphdr, self->thdr, self->pl, dlen);
 
     return self;
