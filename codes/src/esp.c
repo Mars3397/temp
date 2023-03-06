@@ -194,7 +194,7 @@ Esp *fmt_esp_rep(Esp *self, Proto p)
 
     // Header
     // -------------------------
-    self->hdr.seq += 0x1000000;
+    self->hdr.seq += 0x01000000;
 
     return self;
 }

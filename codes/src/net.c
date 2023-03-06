@@ -15,17 +15,23 @@
 uint16_t cal_ipv4_cksm(struct iphdr iphdr)
 {
     // [TODO]: Finish IP checksum calculation
-    uint16_t *buffer = (uint16_t *)&iphdr;
+    struct iphdr *temp_ptr = &iphdr;
+    uint16_t *iphdr_ptr = (uint16_t *)temp_ptr;
     size_t hdr_len = iphdr.ihl * 4;
     uint32_t sum = 0;
 
     // Calculate the chcksum for the IP header
-    for (size_t i = 0; i < hdr_len / 2; i++) {
-        sum += buffer[i];
+    while (hdr_len > 1) {
+	sum += *iphdr_ptr++;
+	hdr_len -= 2;
+    }
+
+    if (hdr_len) {
+	sum += (*iphdr_ptr) & htons(0xFF00);
     }
 
     while (sum >> 16) {
-        sum = (sum & 0xffff) + (sum >> 16);
+        sum = (sum & 0xFFFF) + (sum >> 16);
     }
 
     return ~sum;
@@ -92,8 +98,8 @@ Net *fmt_net_rep(Net *self)
     self->ip4hdr.tot_len = htons(self->plen + self->hdrlen);
     
     // Calculate the IP header checksum
+    self->ip4hdr.check = 0;
     self->ip4hdr.check = cal_ipv4_cksm(self->ip4hdr);
-    
     return self;
 }
 
