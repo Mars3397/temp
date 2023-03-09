@@ -81,13 +81,11 @@ void fmt_frame(Dev *self, Net net, Esp esp, Txp txp)
     // [TODO]: store the whole frame into self->frame
     // and store the length of the frame into self->framelen
 
-    // uint8_t *frame;
-    // --------------------------
     // Declare a 8 bit pointer point to the memory location of self->frame
     uint8_t *frame_ptr = self->frame;
-    size_t offset = 0;
-    // define link layer header
+
     // copy memory content to frame according to the order of trasport mode
+    size_t offset = 0;
     memcpy(frame_ptr + offset, self->linkhdr, LINKHDRLEN);      offset += LINKHDRLEN;
     memcpy(frame_ptr + offset, &net.ip4hdr, net.hdrlen);        offset += net.hdrlen;
     memcpy(frame_ptr + offset, &esp.hdr, sizeof(EspHeader));    offset += sizeof(EspHeader);
@@ -97,8 +95,7 @@ void fmt_frame(Dev *self, Net net, Esp esp, Txp txp)
     memcpy(frame_ptr + offset, &esp.tlr, sizeof(EspTrailer));   offset += sizeof(EspTrailer);
     memcpy(frame_ptr + offset, esp.auth, esp.authlen);         offset += esp.authlen;
 
-    // uint16_t framelen;
-    // ---------------------------
+    // Set framelen
     self->framelen = offset;
 }
 

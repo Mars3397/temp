@@ -22,12 +22,13 @@ uint16_t cal_ipv4_cksm(struct iphdr iphdr)
 
     // Calculate the chcksum for the IP header
     while (hdr_len > 1) {
-	sum += *iphdr_ptr++;
-	hdr_len -= 2;
+        sum += *iphdr_ptr++;
+        hdr_len -= 2;
     }
 
+    // Deal with odd header len
     if (hdr_len) {
-	sum += (*iphdr_ptr) & htons(0xFF00);
+	    sum += (*iphdr_ptr) & htons(0xFF00);
     }
 
     while (sum >> 16) {
@@ -56,9 +57,11 @@ uint8_t *dissect_ip(Net *self, uint8_t *pkt, size_t pkt_len)
 
     // Cast the packet as an IP header struct
     struct iphdr *iph = (struct iphdr *)pkt;
+    // Copy IPV4 header to self->ip4hdr
     memcpy(&self->ip4hdr, pkt, sizeof(struct iphdr));
 
     // Set the IP source and destination address
+    // x_dst_ip and x_src_ip will be the value been store in the header in fmt_net_rep
     inet_ntop(AF_INET, &(iph->saddr), self->src_ip, INET_ADDRSTRLEN);
     inet_ntop(AF_INET, &(iph->saddr), self->x_dst_ip, INET_ADDRSTRLEN);
     inet_ntop(AF_INET, &(iph->daddr), self->dst_ip, INET_ADDRSTRLEN);
@@ -77,6 +80,7 @@ Net *fmt_net_rep(Net *self)
 {
     // [TODO]: Fill up self->ip4hdr (prepare to send
     
+    // Check the validity of the function arguments
     if (!self) {
         fprintf(stderr, "Invalid arguments of %s().\n", __func__);
         return NULL;
@@ -100,6 +104,7 @@ Net *fmt_net_rep(Net *self)
     // Calculate the IP header checksum
     self->ip4hdr.check = 0;
     self->ip4hdr.check = cal_ipv4_cksm(self->ip4hdr);
+    
     return self;
 }
 

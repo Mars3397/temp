@@ -14,6 +14,7 @@ void get_ik(int type, uint8_t *key)
     // [TODO]: Dump authentication key from security association database (SADB)
     // (Ref. RFC2367 Section 2.3.4 & 2.4 & 3.1.10)
     
+    // Declare sock_fd and sadb_msg for SADB_DUMP
     int sock_fd;
     struct sadb_msg msg = {
         .sadb_msg_version = PF_KEY_V2,
@@ -33,7 +34,7 @@ void get_ik(int type, uint8_t *key)
         return;
     }
 
-    // Send the SADB_GET message to the kernel
+    // Send the SADB_DUMP message to the kernel
     size_t l = write(sock_fd, &msg, sizeof(struct sadb_msg)); 
     if (l < 0) {
         perror("write");
@@ -41,7 +42,7 @@ void get_ik(int type, uint8_t *key)
         return;
     }
 
-    // Receive the SADB_GET message response from the kernel
+    // Receive the SADB_DUMP message response from the kernel
     char buf[1024];
     ssize_t len = read(sock_fd, &buf, 1024);
     if (len < 0) {
@@ -81,11 +82,10 @@ uint8_t *set_esp_pad(Esp *self)
     // Calculate the length of the padding needed and store in ESP trailer
     self->tlr.pad_len = (4 - (self->plen + sizeof(EspTrailer)) % 4);
 
-    // Allocate memory for the padding and set all bytes to the padding length
-
+    // Allocate memory for the padding and set it with 0102...0n
     uint8_t pad_ptr[self->tlr.pad_len];
     for (int i = 1; i <= self->tlr.pad_len; i++) {
-	memset(&pad_ptr[i - 1], (uint8_t)(i), 1);
+	    memset(&pad_ptr[i - 1], (uint8_t)(i), 1);
     }
     memcpy(&self->pad, pad_ptr, self->tlr.pad_len);
 
@@ -109,7 +109,7 @@ uint8_t *set_esp_auth(Esp *self,
 
     // [TODO]: Put everything needed to be authenticated into buff and add up nb
     memcpy(buff, &self->hdr, sizeof(EspHeader));        nb += sizeof(EspHeader);
-    memcpy(buff + nb, self->pl, self->plen);           nb += self->plen;
+    memcpy(buff + nb, self->pl, self->plen);            nb += self->plen;
     memcpy(buff + nb, &self->pad, self->tlr.pad_len);   nb += self->tlr.pad_len;
     memcpy(buff + nb, &self->tlr, sizeof(EspTrailer));  nb += sizeof(EspTrailer);
     
@@ -150,25 +150,11 @@ uint8_t *dissect_esp(Esp *self, uint8_t *esp_pkt, size_t esp_len)
     // Copy ESP trailer from the packet
     memcpy(&self->tlr, esp_pkt + esp_len - sizeof(EspTrailer) - HMAC96AUTHLEN, sizeof(EspTrailer));
 
-    // Allocate memory for ESP padding
-    self->pad = (uint8_t *)malloc(self->tlr.pad_len);
-    if (!self->pad) {
-        fprintf(stderr, "Failed to allocate memory for ESP padding.\n");
-        return NULL;
-    }
     // Copy ESP padding from the packet
     memcpy(self->pad, esp_pkt + esp_len - HMAC96AUTHLEN - sizeof(EspTrailer) - self->tlr.pad_len, self->tlr.pad_len);
     
     // Get ESP payload length from the padding length field in the trailer
     self->plen = esp_len - HMAC96AUTHLEN - sizeof(EspTrailer) - self->tlr.pad_len;
-    // printf("self->plen: %ld\n", self->plen);
-
-    // Allocate memory for ESP payload
-    self->pl = (uint8_t *)malloc(self->plen);
-    if (!self->pl) {
-        fprintf(stderr, "Failed to allocate memory for ESP payload.\n");
-        return NULL;
-    }
     // Copy ESP payload from the packet
     memcpy(self->pl, esp_pkt, self->plen);
 

@@ -22,30 +22,33 @@ uint16_t cal_tcp_cksm(struct iphdr iphdr, struct tcphdr tcphdr, uint8_t *pl, int
     
     // Calculate the TCP pseudo-header checksum
     uint32_t sum = 0;
-    sum += (iphdr.saddr >> 16) & 0xFFFF; // Add the source IP address (upper 16 bits)
-    sum += iphdr.saddr & 0xFFFF;         // Add the source IP address (lower 16 bits)
-    sum += (iphdr.daddr >> 16) & 0xFFFF; // Add the destination IP address (upper 16 bits)
-    sum += iphdr.daddr & 0xFFFF;         // Add the destination IP address (lower 16 bits)
-    sum += htons(IPPROTO_TCP);           // Add the protocol number (TCP)
+    sum += (iphdr.saddr >> 16) & 0xFFFF; 
+    sum += iphdr.saddr & 0xFFFF;         
+    sum += (iphdr.daddr >> 16) & 0xFFFF; 
+    sum += iphdr.daddr & 0xFFFF;         
+    sum += htons(IPPROTO_TCP);
     uint16_t tcphdr_len = tcphdr.th_off * 4;
     uint16_t tcp_len = tcphdr_len + plen;
-    sum += htons(tcp_len);     // Add the length of the TCP header and payload
+    sum += htons(tcp_len);
 
-    uint8_t *buf = (uint8_t *)malloc((tcphdr_len + plen) * sizeof(uint8_t)); // Create a buffer to store the TCP header and payload
-    memcpy(buf, &tcphdr, tcphdr_len); // Copy the TCP header to the buffer
-    memcpy(buf + tcphdr_len, pl, plen); // Copy the payload to the buffer, starting at the midpoint of the buffer
+    // Create a buffer to store the TCP header and payload
+    // Then calculate them together in the buffer
+    uint8_t *buf = (uint8_t *)malloc((tcphdr_len + plen) * sizeof(uint8_t)); 
+    memcpy(buf, &tcphdr, tcphdr_len); 
+    memcpy(buf + tcphdr_len, pl, plen);
     uint16_t *pl_ptr = (uint16_t *)buf;
     while (tcp_len > 1) {
-	sum += *pl_ptr++;
-	tcp_len -= 2;
+        sum += *pl_ptr++;
+        tcp_len -= 2;
     }
 
+    // Deal with odd header len
     if (tcp_len) {
-	sum += (*pl_ptr) & htons(0xFF00);
+	    sum += (*pl_ptr) & htons(0xFF00);
     }
 
     while (sum >> 16) {
-	sum = (sum & 0xFFFF) + (sum >> 16);
+	    sum = (sum & 0xFFFF) + (sum >> 16);
     }
 
     // Take the one's complement of the sum to get the final checksum
@@ -82,7 +85,6 @@ uint8_t *dissect_tcp(Net *net, Txp *self, uint8_t *segm, size_t segm_len)
 
     // Calculate the length of TCP payload
     self->plen = segm_len - self->hdrlen;
-    // printf("tcp payload length: %d\n", self->plen);
     if (self->plen < 0) {
         fprintf(stderr, "Invalid TCP payload length.\n");
         return NULL;
@@ -92,6 +94,7 @@ uint8_t *dissect_tcp(Net *net, Txp *self, uint8_t *segm, size_t segm_len)
     self->pl = (uint8_t *)malloc(self->plen * sizeof(uint8_t));
     memcpy(self->pl, segm + self->hdrlen, self->plen);
     
+    // Fill up expect value which will be used in fmt_tcp_rep
     if (strcmp(net->dst_ip, net->x_src_ip) == 0 && self->plen != 0) {
         self->x_tx_seq = ntohl(self->thdr.th_ack);
         self->x_tx_ack = ntohl(self->thdr.th_seq) + self->plen;
@@ -118,7 +121,10 @@ Txp *fmt_tcp_rep(Txp *self, struct iphdr iphdr, uint8_t *data, size_t dlen)
         self->thdr.psh = 0;
     }
     
+    // Copy data to TCP payload
     memcpy(self->pl, data, dlen);
+
+    // Calculate the TCP header checksum
     self->thdr.check = 0;
     self->thdr.check = cal_tcp_cksm(iphdr, self->thdr, self->pl, dlen);
 
