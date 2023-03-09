@@ -79,7 +79,7 @@ uint8_t *set_esp_pad(Esp *self)
     }
     
     // Calculate the length of the padding needed and store in ESP trailer
-    self->tlr.pad_len = (8 - (self->plen + sizeof(EspTrailer)) % 8);
+    self->tlr.pad_len = (4 - (self->plen + sizeof(EspTrailer)) % 4);
 
     // Allocate memory for the padding and set all bytes to the padding length
 
@@ -179,22 +179,15 @@ Esp *fmt_esp_rep(Esp *self, Proto p)
 {
     // [TODO]: Fill up ESP header and trailer (prepare to send)
 
-    // AH
-    // -------------------------
-    //self->auth = set_esp_auth(self, hmac_sha1_96);
-    
-    // Trailer
-    // -------------------------
-    // Set up padding and padding length
-    //set_esp_pad(self);
-
     // The value of "next" in the ESP trailer indicates the protocol that 
     // should follow the ESP protocol (eg. ICMP, TCP)
     self->tlr.nxt = p;
 
     // Header
     // -------------------------
-    self->hdr.seq += 0x01000000;
+    self->hdr.seq = htonl(esp_hdr_rec.seq + 1);
+    esp_hdr_rec.seq += 1;
+    self->hdr.spi = esp_hdr_rec.spi;
 
     return self;
 }

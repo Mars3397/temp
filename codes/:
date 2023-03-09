@@ -10,12 +10,6 @@
 #include "net.h"
 #include "transport.h"
 
-void swap(uint32_t *a, uint32_t *b) {
-	uint32_t temp = *a;
-	*a = *b;
-	*b = temp;
-}
-
 uint16_t cal_tcp_cksm(struct iphdr iphdr, struct tcphdr tcphdr, uint8_t *pl, int plen)
 {
     // [TODO]: Finish TCP checksum calculation
@@ -88,15 +82,20 @@ uint8_t *dissect_tcp(Net *net, Txp *self, uint8_t *segm, size_t segm_len)
         return NULL;
     }
 
+    // Allocate memory for TCP payload
+    if (!self->pl) {
+        fprintf(stderr, "Failed to allocate memory for TCP payload.\n");
+        return NULL;
+    }
     // Copy TCP payload from the segment
     self->pl = (uint8_t *)malloc(self->plen * sizeof(uint8_t));
     memcpy(self->pl, segm + self->hdrlen, self->plen);
     
-    if (strcmp(net->dst_ip, net->x_src_ip) == 0 && self->plen != 0) {
-        self->x_tx_seq = ntohl(self->thdr.th_ack);
-        self->x_tx_ack = ntohl(self->thdr.th_seq) + self->plen;
-        self->x_src_port = ntohs(self->thdr.th_dport);
-        self->x_dst_port = ntohs(self->thdr.th_sport);
+    if (strcmp(net->src_ip, net->x_dst_ip) == 0 && self->plen != 0) {
+	printf("Secret from server with ack: %d\n", self->thdr.ack);
+	// int temp = self->thdr.seq;
+	self->x_tx_seq = self->x_tx_ack;
+	self->x_tx_ack = 1;
     }
 
     // Return TCP payload
@@ -109,15 +108,12 @@ Txp *fmt_tcp_rep(Txp *self, struct iphdr iphdr, uint8_t *data, size_t dlen)
     
     // Hint 2
     // Fill up the TCP header
-    self->thdr.th_seq = htonl(self->x_tx_seq);
-    self->thdr.th_ack = htonl(self->x_tx_ack);
-    self->thdr.th_sport = htons(self->x_src_port);
-    self->thdr.th_dport = htons(self->x_dst_port);
-
-    if (dlen == 0) {
-        self->thdr.psh = 0;
-    }
+    self->thdr.seq = htonl(self->x_tx_seq);
+    self->thdr.ack_seq = htonl(self->x_tx_ack);
     
+    if (dlen == 0) {
+    	self->thdr.psh = 0;
+    }
     memcpy(self->pl, data, dlen);
     self->thdr.check = 0;
     self->thdr.check = cal_tcp_cksm(iphdr, self->thdr, self->pl, dlen);

@@ -59,10 +59,10 @@ uint8_t *dissect_ip(Net *self, uint8_t *pkt, size_t pkt_len)
     memcpy(&self->ip4hdr, pkt, sizeof(struct iphdr));
 
     // Set the IP source and destination address
-    inet_ntop(AF_INET, &(iph->saddr), self->src_ip, INET6_ADDRSTRLEN);
-    inet_ntop(AF_INET, &(iph->daddr), self->dst_ip, INET6_ADDRSTRLEN);
-    inet_ntop(AF_INET, &(iph->saddr), self->x_src_ip, INET6_ADDRSTRLEN);
-    inet_ntop(AF_INET, &(iph->daddr), self->x_dst_ip, INET6_ADDRSTRLEN);
+    inet_ntop(AF_INET, &(iph->saddr), self->src_ip, INET_ADDRSTRLEN);
+    inet_ntop(AF_INET, &(iph->saddr), self->x_dst_ip, INET_ADDRSTRLEN);
+    inet_ntop(AF_INET, &(iph->daddr), self->dst_ip, INET_ADDRSTRLEN);
+    inet_ntop(AF_INET, &(iph->daddr), self->x_src_ip, INET_ADDRSTRLEN);
 
     // Set the protocol number and payload length
     self->pro = (Proto)iph->protocol;
@@ -83,12 +83,12 @@ Net *fmt_net_rep(Net *self)
     }
     
     // Set the source and destination IP addresses in the IP header
-    if (inet_pton(AF_INET, self->src_ip, &(self->ip4hdr.saddr)) != 1) {
+    if (inet_pton(AF_INET, self->x_src_ip, &(self->ip4hdr.saddr)) != 1) {
         fprintf(stderr, "Invalid source IP address.\n");
         return NULL;
     }
     
-    if (inet_pton(AF_INET, self->dst_ip, &(self->ip4hdr.daddr)) != 1) {
+    if (inet_pton(AF_INET, self->x_dst_ip, &(self->ip4hdr.daddr)) != 1) {
         fprintf(stderr, "Invalid destination IP address.\n");
         return NULL;
     }
