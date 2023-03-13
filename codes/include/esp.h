@@ -51,9 +51,9 @@ struct esp {
 
     uint8_t *(*set_padpl)(Esp *self);
     uint8_t *(*set_auth)(Esp *self,
-                         ssize_t (*hmac)(uint8_t const *, size_t,
-                                         uint8_t const *, size_t,
-                                         uint8_t *));
+    ssize_t (*hmac)(uint8_t const *, size_t,
+                    uint8_t const *, size_t,
+                    uint8_t *));
     void (*get_key)(Esp *self);
     uint8_t *(*dissect)(Esp *self, uint8_t *esp_pkt, size_t esp_len);
     Esp *(*fmt_rep)(Esp *self, Proto p);

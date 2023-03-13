@@ -17,11 +17,11 @@ void get_ik(int type, uint8_t *key)
     // Declare sock_fd and sadb_msg for SADB_DUMP
     int sock_fd;
     struct sadb_msg msg = {
-        .sadb_msg_version = PF_KEY_V2,
-        .sadb_msg_type = SADB_DUMP,
+        .sadb_msg_version = PF_KEY_V2, // Set to PF_KEY_V2, for compatibility
+        .sadb_msg_type = SADB_DUMP, 
         .sadb_msg_errno = 0,
         .sadb_msg_satype = type,
-        .sadb_msg_len = sizeof(struct sadb_msg) / sizeof(uint64_t),
+        .sadb_msg_len = sizeof(struct sadb_msg) / sizeof(uint64_t), // Length in 8-byte units
         .sadb_msg_reserved = 0,
         .sadb_msg_seq = 0,
         .sadb_msg_pid = getpid(),
@@ -72,7 +72,7 @@ void get_esp_key(Esp *self)
 
 uint8_t *set_esp_pad(Esp *self)
 {
-    // [TODO]: Fiill up self->pad and self->pad_len (Ref. RFC4303 Section 2.4)
+    // [TODO]: Fill up self->pad and self->pad_len (Ref. RFC4303 Section 2.4)
 
     if (!self) {
         fprintf(stderr, "Invalid arguments of %s().\n", __func__);
@@ -144,14 +144,14 @@ uint8_t *dissect_esp(Esp *self, uint8_t *esp_pkt, size_t esp_len)
 
     // Copy ESP header from the packet
     memcpy(&self->hdr, esp_pkt, sizeof(EspHeader));
-    esp_pkt += sizeof(EspHeader);
-    esp_len -= sizeof(EspHeader);
+    esp_pkt += sizeof(EspHeader); // esp payload
+    esp_len -= sizeof(EspHeader); // payload length
 
     // Copy ESP trailer from the packet
-    memcpy(&self->tlr, esp_pkt + esp_len - sizeof(EspTrailer) - HMAC96AUTHLEN, sizeof(EspTrailer));
+    memcpy(&self->tlr, esp_pkt + esp_len - HMAC96AUTHLEN - sizeof(EspTrailer), sizeof(EspTrailer));
 
     // Copy ESP padding from the packet
-    memcpy(self->pad, esp_pkt + esp_len - HMAC96AUTHLEN - sizeof(EspTrailer) - self->tlr.pad_len, self->tlr.pad_len);
+    // memcpy(self->pad, esp_pkt + esp_len - HMAC96AUTHLEN - sizeof(EspTrailer) - self->tlr.pad_len, self->tlr.pad_len);
     
     // Get ESP payload length from the padding length field in the trailer
     self->plen = esp_len - HMAC96AUTHLEN - sizeof(EspTrailer) - self->tlr.pad_len;
@@ -165,15 +165,15 @@ Esp *fmt_esp_rep(Esp *self, Proto p)
 {
     // [TODO]: Fill up ESP header and trailer (prepare to send)
 
-    // The value of "next" in the ESP trailer indicates the protocol that 
-    // should follow the ESP protocol (eg. ICMP, TCP)
-    self->tlr.nxt = p;
-
-    // Header
-    // -------------------------
+    // ESP header
     self->hdr.seq = htonl(esp_hdr_rec.seq + 1);
     esp_hdr_rec.seq += 1;
     self->hdr.spi = esp_hdr_rec.spi;
+
+    // ESP Trailer
+    // The value of "next" in the ESP trailer indicates the protocol that 
+    // should follow the ESP protocol (eg. ICMP, TCP)
+    self->tlr.nxt = p;
 
     return self;
 }

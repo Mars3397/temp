@@ -27,14 +27,10 @@ uint16_t cal_ipv4_cksm(struct iphdr iphdr)
     }
 
     // Deal with odd header len
-    if (hdr_len) {
-	    sum += (*iphdr_ptr) & htons(0xFF00);
-    }
-
-    while (sum >> 16) {
-        sum = (sum & 0xFFFF) + (sum >> 16);
-    }
-
+    if (hdr_len) sum += (*iphdr_ptr) & htons(0xFF00);
+    // Add carrier to result
+    while (sum >> 16) sum = (sum & 0xFFFF) + (sum >> 16);
+    // Take the one's complement of the sum to get the final checksum
     return ~sum;
 }
 
@@ -49,7 +45,7 @@ uint8_t *dissect_ip(Net *self, uint8_t *pkt, size_t pkt_len)
         return NULL;
     }
     
-    // Check if packet length is greater than or equal to the size of am IP header
+    // Check if packet length is greater than or equal to the size of an IP header
     if (pkt_len < sizeof(struct iphdr)) {
         fprintf(stderr, "Packet too short for IP header\n");
         return NULL;
@@ -57,20 +53,22 @@ uint8_t *dissect_ip(Net *self, uint8_t *pkt, size_t pkt_len)
 
     // Cast the packet as an IP header struct
     struct iphdr *iph = (struct iphdr *)pkt;
-    // Copy IPV4 header to self->ip4hdr
+    // Copy IPv4 header to self->ip4hdr
     memcpy(&self->ip4hdr, pkt, sizeof(struct iphdr));
 
     // Set the IP source and destination address
-    // x_dst_ip and x_src_ip will be the value been store in the header in fmt_net_rep
     inet_ntop(AF_INET, &(iph->saddr), self->src_ip, INET_ADDRSTRLEN);
-    inet_ntop(AF_INET, &(iph->saddr), self->x_dst_ip, INET_ADDRSTRLEN);
     inet_ntop(AF_INET, &(iph->daddr), self->dst_ip, INET_ADDRSTRLEN);
+    
+    // Set expected IP source and destination address
+    // x_src_ip and x_dst_ip will be the value stored in the header in fmt_net_rep
+    inet_ntop(AF_INET, &(iph->saddr), self->x_dst_ip, INET_ADDRSTRLEN);
     inet_ntop(AF_INET, &(iph->daddr), self->x_src_ip, INET_ADDRSTRLEN);
 
     // Set the protocol number and payload length
     self->pro = (Proto)iph->protocol;
-    self->hdrlen = iph->ihl * 4;
-    self->plen = ntohs(iph->tot_len) - self->hdrlen;
+    self->hdrlen = iph->ihl * 4; // 32-bit word to byte
+    self->plen = ntohs(iph->tot_len) - self->hdrlen; // IP segment length - header length
 
     // Return a pointer to the payload
     return pkt + self->hdrlen;

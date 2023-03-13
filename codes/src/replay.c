@@ -21,7 +21,7 @@ void tx_esp_rep(Dev dev,
 {
     size_t nb = dlen;
 
-    txp.plen = dlen;
+    txp.plen = dlen; // data length
     txp.fmt_rep(&txp, net.ip4hdr, data, nb);
     nb += sizeof(struct tcphdr);
 
@@ -38,7 +38,6 @@ void tx_esp_rep(Dev dev,
     net.fmt_rep(&net);
 
     dev.fmt_frame(&dev, net, esp, txp);
-
     dev.tx_frame(&dev);
 }
 
@@ -82,17 +81,17 @@ bool dissect_rx_data(Dev *dev,
                 char* server_ip,
                 bool* test_for_dissect)
 {
-    // 
+    // pass in the packet without link layer header to net->dissect
     uint8_t *net_data = net->dissect(net, dev->frame + LINKHDRLEN, dev->framelen - LINKHDRLEN);
 
     if (net->pro == ESP) {
-        uint8_t *esp_data = esp->dissect(esp, net_data, net->plen);
 
+        uint8_t *esp_data = esp->dissect(esp, net_data, net->plen);
         uint8_t *txp_data = txp->dissect(net, txp, esp_data, esp->plen);
 
-        if(txp->thdr.psh){
+        if(txp->thdr.psh){ // check if there is data
 
-            if(*test_for_dissect){
+            if(*test_for_dissect){ // first time
                 *test_for_dissect = false;
                 puts("you can start to send the message...");
             }
@@ -122,7 +121,7 @@ uint8_t *wait(Dev *dev,
     bool dissect_finish;
 
     while (true) {
-        dev->framelen = dev->rx_frame(dev);
+        dev->framelen = dev->rx_frame(dev); // receive packet and store to dev->frame
         dissect_finish = dissect_rx_data(dev, net, esp, txp, state, victim_ip, server_ip, test_for_dissect) ? true : false;
         if(dissect_finish) break;
     }

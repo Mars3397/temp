@@ -24,6 +24,7 @@ inline static int get_ifr_mtu(struct ifreq *ifr)
         exit(EXIT_FAILURE);
     }
 
+    // SIOCGIFMTU : get the Maximum Transfer Unit (MTU) using ifr_mtu
     if (ioctl(fd, SIOCGIFMTU, ifr) < 0) {
         perror("ioctl()");
         close(fd);
@@ -90,10 +91,10 @@ void fmt_frame(Dev *self, Net net, Esp esp, Txp txp)
     memcpy(frame_ptr + offset, &net.ip4hdr, net.hdrlen);        offset += net.hdrlen;
     memcpy(frame_ptr + offset, &esp.hdr, sizeof(EspHeader));    offset += sizeof(EspHeader);
     memcpy(frame_ptr + offset, &txp.thdr, txp.hdrlen);          offset += txp.hdrlen;
-    memcpy(frame_ptr + offset, txp.pl, txp.plen);              offset += txp.plen;
-    memcpy(frame_ptr + offset, &esp.pad, esp.tlr.pad_len);	offset += esp.tlr.pad_len;
+    memcpy(frame_ptr + offset, txp.pl, txp.plen);               offset += txp.plen;
+    memcpy(frame_ptr + offset, &esp.pad, esp.tlr.pad_len);	    offset += esp.tlr.pad_len;
     memcpy(frame_ptr + offset, &esp.tlr, sizeof(EspTrailer));   offset += sizeof(EspTrailer);
-    memcpy(frame_ptr + offset, esp.auth, esp.authlen);         offset += esp.authlen;
+    memcpy(frame_ptr + offset, esp.auth, esp.authlen);          offset += esp.authlen;
 
     // Set framelen
     self->framelen = offset;
@@ -137,15 +138,16 @@ ssize_t rx_frame(Dev *self)
 
 void init_dev(Dev *self, char *dev_name)
 {
+    // check input format (IF_NAMESIZE : length of interface name (16) from net/if.h)
     if (!self || !dev_name || strlen(dev_name) + 1 > IF_NAMESIZE) {
         fprintf(stderr, "Invalid arguments of %s.", __func__);
         exit(EXIT_FAILURE);
     }
 
-    struct ifreq ifr;
-    snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", dev_name);
+    struct ifreq ifr; // interface request
+    snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", dev_name); // store dev_name to ifr.ifr_name
 
-    self->mtu = get_ifr_mtu(&ifr);
+    self->mtu = get_ifr_mtu(&ifr); // get maximum transfer unit
 
     self->addr = init_addr(dev_name);
     self->fd = set_sock_fd(self->addr);
